@@ -1,5 +1,4 @@
-﻿using MySql.Data.MySqlClient;
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
@@ -10,11 +9,8 @@ namespace CalculadoraWinForms
 {
     internal static class Program
     {
-        [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new FormCalculadora());
         }
     }
@@ -23,34 +19,18 @@ namespace CalculadoraWinForms
     {
         string cadena;
 
+
         public BaseDeDatos(string c)
         {
             cadena = c;
-            try { CrearTablaSiNoExiste(); } catch { }
-        }
-
-        void CrearTablaSiNoExiste()
-        {
-            using (var cn = new MySqlConnection(cadena))
-            {
-                cn.Open();
-                var cmd = new MySqlCommand(@"
-                    CREATE TABLE IF NOT EXISTS calculos (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        expresion VARCHAR(255) NOT NULL,
-                        resultado DOUBLE NOT NULL,
-                        fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-                    );", cn);
-                cmd.ExecuteNonQuery();
-            }
         }
 
         public void Guardar(string expresion, double resultado)
         {
-            using (var cn = new MySqlConnection(cadena))
+            using (var cn = new SqlConnection(cadena))
             {
                 cn.Open();
-                var cmd = new MySqlCommand("INSERT INTO calculos(expresion,resultado) VALUES(@e,@r);", cn);
+                var cmd = new SqlCommand("INSERT INTO calculos(expresion,resultado) VALUES(@e,@r);", cn);
                 cmd.Parameters.AddWithValue("@e", expresion);
                 cmd.Parameters.AddWithValue("@r", resultado);
                 cmd.ExecuteNonQuery();
@@ -59,11 +39,11 @@ namespace CalculadoraWinForms
 
         public DataTable ObtenerTodos()
         {
-            using (var cn = new MySqlConnection(cadena))
+            using (var cn = new SqlConnection(cadena))
             {
                 cn.Open();
-                var cmd = new MySqlCommand("SELECT id, expresion, resultado, fecha FROM calculos ORDER BY id DESC;", cn);
-                var da = new MySqlDataAdapter(cmd);
+                var cmd = new SqlCommand("SELECT * FROM calculos ORDER BY fecha DESC;", cn);
+                var da = new SqlDataAdapter(cmd);
                 var dt = new DataTable();
                 da.Fill(dt);
                 return dt;
@@ -92,13 +72,14 @@ namespace CalculadoraWinForms
 
     public class FormCalculadora : Form
     {
+        string cadenaConexion = @"Server=.\sqlexpress;Database=calculadora;Trusted_Connection=True;Integrated Security=SSPI;";
+
         TextBox txtPantalla;
         TableLayoutPanel panel;
         double numero1 = 0;
         string operador = null;
         bool nuevoNumero = true;
         BaseDeDatos db;
-        string cadenaConexion = "server=localhost;port=3306;database=calculadora_db;uid=calc_user;pwd=clave123;SslMode=None;";
 
         public FormCalculadora()
         {
@@ -154,8 +135,8 @@ namespace CalculadoraWinForms
             AgregarBoton("3", 2, 3, ClickNumero);
             AgregarBoton("-", 3, 3, ClickOperador);
 
-            AgregarBoton("0", 0, 4, ClickNumero);
-            AgregarBoton(".", 1, 4, ClickPunto);
+            AgregarBoton(".", 0, 4, ClickPunto);
+            AgregarBoton("0", 1, 4, ClickNumero);
             AgregarBoton("±", 2, 4, ClickSigno);
             AgregarBoton("+", 3, 4, ClickOperador);
 
